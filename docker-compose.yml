@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  music-rag-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: music-rag-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - CHROMADB_PATH=/app/data/chromadb
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      # Uncomment to enable API key authentication
+      # - API_KEY=your-secret-api-key-here
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - music-rag-network
+
+  # Optional: Add Qdrant for production-grade vector database
+  # qdrant:
+  #   image: qdrant/qdrant:latest
+  #   container_name: music-rag-qdrant
+  #   ports:
+  #     - "6333:6333"
+  #     - "6334:6334"
+  #   volumes:
+  #     - ./data/qdrant:/qdrant/storage
+  #   networks:
+  #     - music-rag-network
+
+networks:
+  music-rag-network:
+    driver: bridge
+
+volumes:
+  chromadb-data:
