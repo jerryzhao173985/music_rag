@@ -43,20 +43,26 @@ class CLAPEmbedder:
             self.device = device
 
         # Load model and processor
-        self.model = ClapModel.from_pretrained(
-            model_name,
-            cache_dir=cache_dir
-        ).to(self.device)
-        self.processor = ClapProcessor.from_pretrained(
-            model_name,
-            cache_dir=cache_dir
-        )
+        try:
+            self.model = ClapModel.from_pretrained(
+                model_name,
+                cache_dir=cache_dir
+            ).to(self.device)
+            self.model.eval()  # Set to evaluation mode
 
-        # Get embedding dimension
-        # CLAP typically outputs 512-dimensional embeddings
+            self.processor = ClapProcessor.from_pretrained(
+                model_name,
+                cache_dir=cache_dir
+            )
+        except Exception as e:
+            logger.error(f"Failed to load CLAP model '{model_name}': {e}")
+            raise RuntimeError(f"CLAP model initialization failed: {e}") from e
+
+        # Get embedding dimension from model config
+        # CLAP projection dimension varies by model (typically 512 or 1024)
         self.embedding_dim = self.model.config.projection_dim
 
-        logger.info(f"CLAP model loaded on {self.device}, embedding_dim={self.embedding_dim}")
+        logger.info(f"CLAP model loaded successfully on {self.device}, embedding_dim={self.embedding_dim}")
 
     def embed_text(self, texts: Union[str, List[str]]) -> np.ndarray:
         """
@@ -71,22 +77,30 @@ class CLAPEmbedder:
         if isinstance(texts, str):
             texts = [texts]
 
-        # Process texts
-        inputs = self.processor(
-            text=texts,
-            return_tensors="pt",
-            padding=True,
-            truncation=True
-        ).to(self.device)
+        if not texts:
+            raise ValueError("Empty text list provided")
 
-        # Generate embeddings
-        with torch.no_grad():
-            text_embeds = self.model.get_text_features(**inputs)
+        try:
+            # Process texts
+            inputs = self.processor(
+                text=texts,
+                return_tensors="pt",
+                padding=True,
+                truncation=True
+            ).to(self.device)
 
-        # Normalize embeddings (CLAP uses normalized embeddings)
-        text_embeds = text_embeds / text_embeds.norm(p=2, dim=-1, keepdim=True)
+            # Generate embeddings
+            with torch.no_grad():
+                text_embeds = self.model.get_text_features(**inputs)
 
-        return text_embeds.cpu().numpy()
+            # Normalize embeddings (CLAP uses normalized embeddings for similarity)
+            text_embeds = text_embeds / text_embeds.norm(p=2, dim=-1, keepdim=True)
+
+            return text_embeds.cpu().numpy()
+
+        except Exception as e:
+            logger.error(f"Error generating text embeddings: {e}")
+            raise RuntimeError(f"Text embedding generation failed: {e}") from e
 
     def embed_audio(
         self,
@@ -99,7 +113,7 @@ class CLAPEmbedder:
 
         Args:
             audio_paths: Single audio file path or list of paths
-            sample_rate: Sample rate for audio (CLAP uses 48kHz)
+            sample_rate: Sample rate for audio (CLAP expects 48kHz)
             max_duration: Maximum duration in seconds to process
 
         Returns:
@@ -108,7 +122,12 @@ class CLAPEmbedder:
         if isinstance(audio_paths, str):
             audio_paths = [audio_paths]
 
+        if not audio_paths:
+            raise ValueError("Empty audio paths list provided")
+
         audio_arrays = []
+        failed_files = []
+
         for audio_path in audio_paths:
             try:
                 # Load audio file
@@ -120,26 +139,35 @@ class CLAPEmbedder:
                 )
                 audio_arrays.append(audio)
             except Exception as e:
-                logger.error(f"Error loading audio file {audio_path}: {e}")
-                # Use zeros as fallback
-                audio_arrays.append(np.zeros(int(sample_rate * max_duration)))
+                logger.warning(f"Failed to load audio file {audio_path}: {e}")
+                failed_files.append(audio_path)
+                # Use zeros as fallback to maintain batch size
+                audio_arrays.append(np.zeros(int(sample_rate * max_duration), dtype=np.float32))
 
-        # Process audio
-        inputs = self.processor(
-            audios=audio_arrays,
-            return_tensors="pt",
-            sampling_rate=sample_rate,
-            padding=True
-        ).to(self.device)
+        if failed_files and len(failed_files) == len(audio_paths):
+            raise RuntimeError(f"All audio files failed to load: {failed_files}")
 
-        # Generate embeddings
-        with torch.no_grad():
-            audio_embeds = self.model.get_audio_features(**inputs)
+        try:
+            # Process audio
+            inputs = self.processor(
+                audios=audio_arrays,
+                return_tensors="pt",
+                sampling_rate=sample_rate,
+                padding=True
+            ).to(self.device)
 
-        # Normalize embeddings
-        audio_embeds = audio_embeds / audio_embeds.norm(p=2, dim=-1, keepdim=True)
+            # Generate embeddings
+            with torch.no_grad():
+                audio_embeds = self.model.get_audio_features(**inputs)
 
-        return audio_embeds.cpu().numpy()
+            # Normalize embeddings (CLAP uses normalized embeddings for similarity)
+            audio_embeds = audio_embeds / audio_embeds.norm(p=2, dim=-1, keepdim=True)
+
+            return audio_embeds.cpu().numpy()
+
+        except Exception as e:
+            logger.error(f"Error generating audio embeddings: {e}")
+            raise RuntimeError(f"Audio embedding generation failed: {e}") from e
 
     def embed_music_item(
         self,

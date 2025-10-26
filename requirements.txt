@@ -12,6 +12,7 @@ torch>=2.1.0
 # Audio processing
 librosa>=0.10.1
 torchaudio>=2.1.0
+soundfile>=0.12.1  # Required by librosa for audio I/O
 
 # API and CLI
 fastapi>=0.109.0

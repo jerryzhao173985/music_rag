@@ -18,11 +18,14 @@ logger = logging.getLogger(__name__)
 class MusicReranker:
     """Rerank retrieved music items using cross-encoder models."""
 
+    MAX_RERANK_CANDIDATES = 200  # Prevent memory issues with too many candidates
+
     def __init__(
         self,
         model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
         device: Optional[str] = None,
-        batch_size: int = 32
+        batch_size: int = 32,
+        max_length: int = 512
     ):
         """
         Initialize reranker.
@@ -31,13 +34,17 @@ class MusicReranker:
             model_name: HuggingFace cross-encoder model name
             device: Device to run model on ('cuda', 'cpu', or None for auto)
             batch_size: Batch size for reranking
+            max_length: Maximum sequence length for tokenization
         """
         logger.info(f"Loading cross-encoder model: {model_name}")
 
-        self.model = CrossEncoder(model_name, device=device)
-        self.batch_size = batch_size
-
-        logger.info(f"Reranker model loaded on device: {self.model.device}")
+        try:
+            self.model = CrossEncoder(model_name, device=device, max_length=max_length)
+            self.batch_size = batch_size
+            logger.info(f"Reranker model loaded successfully on device: {self.model.device}")
+        except Exception as e:
+            logger.error(f"Failed to load reranker model '{model_name}': {e}")
+            raise RuntimeError(f"Reranker initialization failed: {e}") from e
 
     def rerank(
         self,
@@ -62,30 +69,46 @@ class MusicReranker:
         if not documents:
             return []
 
-        # Create query-document pairs
-        pairs = [[query, doc] for doc in documents]
+        if not query or not query.strip():
+            raise ValueError("Query cannot be empty")
 
-        # Get relevance scores
-        scores = self.model.predict(
-            pairs,
-            batch_size=self.batch_size,
-            show_progress_bar=False
-        )
+        # Limit number of candidates to prevent memory issues
+        if len(documents) > self.MAX_RERANK_CANDIDATES:
+            logger.warning(
+                f"Document count ({len(documents)}) exceeds maximum "
+                f"({self.MAX_RERANK_CANDIDATES}). Truncating to top candidates."
+            )
+            documents = documents[:self.MAX_RERANK_CANDIDATES]
 
-        # Create (index, score) tuples
-        results = [(idx, float(score)) for idx, score in enumerate(scores)]
+        try:
+            # Create query-document pairs
+            pairs = [[query, doc] for doc in documents]
 
-        # Sort by score (descending)
-        results.sort(key=lambda x: x[1], reverse=True)
+            # Get relevance scores
+            scores = self.model.predict(
+                pairs,
+                batch_size=self.batch_size,
+                show_progress_bar=False
+            )
 
-        # Filter to top-k
-        if top_k is not None:
-            results = results[:top_k]
+            # Create (index, score) tuples
+            results = [(idx, float(score)) for idx, score in enumerate(scores)]
 
-        if return_scores:
-            return results
-        else:
-            return [idx for idx, _ in results]
+            # Sort by score (descending)
+            results.sort(key=lambda x: x[1], reverse=True)
+
+            # Filter to top-k
+            if top_k is not None:
+                results = results[:top_k]
+
+            if return_scores:
+                return results
+            else:
+                return [idx for idx, _ in results]
+
+        except Exception as e:
+            logger.error(f"Error during reranking: {e}")
+            raise RuntimeError(f"Reranking failed: {e}") from e
 
     def rerank_with_items(
         self,

@@ -8,7 +8,8 @@ from typing import Dict, List, Optional, Any
 from abc import ABC, abstractmethod
 import json
 import logging
-from openai import OpenAI
+import time
+from openai import OpenAI, APIError, APITimeoutError, RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,9 @@ Respond ONLY with valid JSON in this exact format:
         api_key: str,
         model: str = "gpt-4o-mini",
         temperature: float = 0.3,
-        max_tokens: int = 800
+        max_tokens: int = 800,
+        timeout: float = 30.0,
+        max_retries: int = 3
     ):
         """
         Initialize OpenAI query enhancer.
@@ -85,11 +88,18 @@ Respond ONLY with valid JSON in this exact format:
             model: OpenAI model to use (gpt-4o-mini recommended for cost)
             temperature: Sampling temperature (lower = more deterministic)
             max_tokens: Maximum tokens in response
+            timeout: Request timeout in seconds
+            max_retries: Maximum number of retries for failed requests
         """
-        self.client = OpenAI(api_key=api_key)
+        if not api_key:
+            raise ValueError("OpenAI API key is required")
+
+        self.client = OpenAI(api_key=api_key, timeout=timeout, max_retries=max_retries)
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
+        self.timeout = timeout
+        self.max_retries = max_retries
 
         logger.info(f"OpenAI query enhancer initialized with model: {model}")
 
@@ -108,6 +118,10 @@ Respond ONLY with valid JSON in this exact format:
         Returns:
             Dict with enhanced query information
         """
+        # Validate input
+        if not query or not query.strip():
+            raise ValueError("Query cannot be empty")
+
         try:
             # Build user message
             user_message = f"User query: {query}"
@@ -119,7 +133,7 @@ Respond ONLY with valid JSON in this exact format:
                 if 'user_preferences' in context:
                     user_message += f"\n\nUser preferences: {context['user_preferences']}"
 
-            # Call OpenAI API
+            # Call OpenAI API (client already has built-in retry logic)
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
@@ -137,16 +151,29 @@ Respond ONLY with valid JSON in this exact format:
             # Add original query
             result['original_query'] = query
 
-            logger.info(f"Query enhanced: {query} -> {result['enhanced_query']}")
+            logger.info(f"Query enhanced successfully: {query[:50]}...")
 
             return result
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse GPT response as JSON: {e}")
+            logger.error(f"Failed to parse OpenAI response as JSON: {e}")
+            return self._fallback_enhancement(query)
+
+        except RateLimitError as e:
+            logger.error(f"OpenAI rate limit exceeded: {e}")
+            logger.info("Using fallback enhancement due to rate limiting")
+            return self._fallback_enhancement(query)
+
+        except APITimeoutError as e:
+            logger.error(f"OpenAI API timeout: {e}")
+            return self._fallback_enhancement(query)
+
+        except APIError as e:
+            logger.error(f"OpenAI API error: {e}")
             return self._fallback_enhancement(query)
 
         except Exception as e:
-            logger.error(f"Error enhancing query with OpenAI: {e}")
+            logger.error(f"Unexpected error during query enhancement: {e}")
             return self._fallback_enhancement(query)
 
     def _fallback_enhancement(self, query: str) -> Dict[str, Any]:

@@ -25,12 +25,14 @@ try:
     HAS_OPENAI = True
 except ImportError:
     HAS_OPENAI = False
+    logging.warning("OpenAI LLM modules not available. Install 'openai' package to enable query enhancement and explanations.")
 
 try:
     from music_rag.src.retrieval.reranker import MusicCrossEncoderReranker
-    HAS_RERANKER = False  # Set to False by default until model is loaded
+    HAS_RERANKER = True
 except ImportError:
     HAS_RERANKER = False
+    logging.warning("Reranker module not available. Install sentence-transformers to enable reranking.")
 
 logger = logging.getLogger(__name__)
 

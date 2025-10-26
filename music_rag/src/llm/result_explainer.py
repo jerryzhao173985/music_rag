@@ -7,7 +7,7 @@ and generates insights about the results.
 from typing import List, Dict, Optional, Any
 import json
 import logging
-from openai import OpenAI
+from openai import OpenAI, APIError, APITimeoutError, RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,9 @@ Be concise, insightful, and music-savvy in your explanations."""
         api_key: str,
         model: str = "gpt-4o-mini",
         temperature: float = 0.7,
-        max_tokens: int = 1000
+        max_tokens: int = 1000,
+        timeout: float = 30.0,
+        max_retries: int = 3
     ):
         """
         Initialize result explainer.
@@ -43,8 +45,13 @@ Be concise, insightful, and music-savvy in your explanations."""
             model: OpenAI model to use
             temperature: Sampling temperature
             max_tokens: Maximum tokens in response
+            timeout: Request timeout in seconds
+            max_retries: Maximum number of retries
         """
-        self.client = OpenAI(api_key=api_key)
+        if not api_key:
+            raise ValueError("OpenAI API key is required")
+
+        self.client = OpenAI(api_key=api_key, timeout=timeout, max_retries=max_retries)
         self.model = model
         self.temperature = temperature
         self.max_tokens = max_tokens
