@@ -55,7 +55,7 @@ class CLAPEmbedder:
                 cache_dir=cache_dir
             )
         except Exception as e:
-            logger.error(f"Failed to load CLAP model '{model_name}': {e}")
+            logger.exception(f"Failed to load CLAP model '{model_name}'")
             raise RuntimeError(f"CLAP model initialization failed: {e}") from e
 
         # Get embedding dimension from model config
@@ -99,7 +99,7 @@ class CLAPEmbedder:
             return text_embeds.cpu().numpy()
 
         except Exception as e:
-            logger.error(f"Error generating text embeddings: {e}")
+            logger.exception("Error generating text embeddings")
             raise RuntimeError(f"Text embedding generation failed: {e}") from e
 
     def embed_audio(
@@ -131,7 +131,7 @@ class CLAPEmbedder:
         for audio_path in audio_paths:
             try:
                 # Load audio file
-                audio, sr = librosa.load(
+                audio, _ = librosa.load(
                     audio_path,
                     sr=sample_rate,
                     duration=max_duration,
@@ -166,7 +166,7 @@ class CLAPEmbedder:
             return audio_embeds.cpu().numpy()
 
         except Exception as e:
-            logger.error(f"Error generating audio embeddings: {e}")
+            logger.exception("Error generating audio embeddings")
             raise RuntimeError(f"Audio embedding generation failed: {e}") from e
 
     def embed_music_item(

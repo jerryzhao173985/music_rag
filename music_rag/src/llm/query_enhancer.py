@@ -156,24 +156,24 @@ Respond ONLY with valid JSON in this exact format:
             return result
 
         except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse OpenAI response as JSON: {e}")
+            logger.exception("Failed to parse OpenAI response as JSON")
             return self._fallback_enhancement(query)
 
         except RateLimitError as e:
-            logger.error(f"OpenAI rate limit exceeded: {e}")
+            logger.exception("OpenAI rate limit exceeded")
             logger.info("Using fallback enhancement due to rate limiting")
             return self._fallback_enhancement(query)
 
         except APITimeoutError as e:
-            logger.error(f"OpenAI API timeout: {e}")
+            logger.exception("OpenAI API timeout")
             return self._fallback_enhancement(query)
 
         except APIError as e:
-            logger.error(f"OpenAI API error: {e}")
+            logger.exception("OpenAI API error")
             return self._fallback_enhancement(query)
 
         except Exception as e:
-            logger.error(f"Unexpected error during query enhancement: {e}")
+            logger.exception("Unexpected error during query enhancement")
             return self._fallback_enhancement(query)
 
     def _fallback_enhancement(self, query: str) -> Dict[str, Any]:

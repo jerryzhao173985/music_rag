@@ -132,7 +132,7 @@ class MusicRAGUI:
                             moods = suggested['mood_filter']
 
                 except Exception as e:
-                    logger.error(f"Query enhancement failed: {e}")
+                    logger.exception("Query enhancement failed")
 
             # Build query
             query = RetrievalQuery(
@@ -167,7 +167,7 @@ class MusicRAGUI:
                     results = reranked[:top_k]
 
                 except Exception as e:
-                    logger.error(f"Reranking failed: {e}")
+                    logger.exception("Reranking failed")
                     results = results[:top_k]
             else:
                 results = results[:top_k]
@@ -184,7 +184,7 @@ class MusicRAGUI:
                     )
                     explanation_html = self._format_explanations(explanations)
                 except Exception as e:
-                    logger.error(f"Explanation generation failed: {e}")
+                    logger.exception("Explanation generation failed")
 
             # Convert to DataFrame
             if results:
@@ -205,7 +205,7 @@ class MusicRAGUI:
                 )
 
         except Exception as e:
-            logger.error(f"Search error: {e}", exc_info=True)
+            logger.exception("Search error")
             return (
                 pd.DataFrame(),
                 f"<p style='color: red;'>Error: {str(e)}</p>",
@@ -312,8 +312,7 @@ class MusicRAGUI:
 
 def create_interface(
     db_path: str = "./data/chromadb",
-    openai_api_key: Optional[str] = None,
-    share: bool = False
+    openai_api_key: Optional[str] = None
 ) -> gr.Blocks:
     """
     Create Gradio interface.
@@ -321,7 +320,6 @@ def create_interface(
     Args:
         db_path: Path to ChromaDB
         openai_api_key: Optional OpenAI API key
-        share: Create shareable link
 
     Returns:
         Gradio Blocks interface
@@ -505,8 +503,7 @@ def main():
     # Create and launch interface
     app = create_interface(
         db_path=args.db_path,
-        openai_api_key=args.openai_key,
-        share=args.share
+        openai_api_key=args.openai_key
     )
 
     app.launch(

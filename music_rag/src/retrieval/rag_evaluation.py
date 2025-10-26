@@ -135,7 +135,7 @@ class RAGEvaluator:
             return float(np.mean(similarities))
 
         except Exception as e:
-            logger.error(f"Error computing semantic similarity: {e}")
+            logger.exception("Error computing semantic similarity")
             return 0.0
 
     def ranking_quality_score(
@@ -479,7 +479,7 @@ class MusicRAGBenchmark:
                 ]
 
             except Exception as e:
-                logger.error(f"Error processing query '{query_text}': {e}")
+                logger.exception(f"Error processing query '{query_text}'")
                 retrieval_results[query_text] = []
                 latencies.append(0.0)
 

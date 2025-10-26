@@ -121,7 +121,7 @@ Be specific and evocative. Format as JSON: {{"description": "your description he
             return queries
 
         except Exception as e:
-            logger.error(f"Error generating synthetic queries: {e}")
+            logger.exception("Error generating synthetic queries")
             return self._fallback_queries(count)
 
     def generate_description(
@@ -171,7 +171,7 @@ Be specific and evocative. Format as JSON: {{"description": "your description he
             return description
 
         except Exception as e:
-            logger.error(f"Error generating description: {e}")
+            logger.exception("Error generating description")
             return f"A {metadata.get('genre', 'music')} track by {artist}."
 
     def generate_evaluation_dataset(
@@ -254,7 +254,7 @@ Respond with JSON matching this schema."""
             return metadata
 
         except Exception as e:
-            logger.error(f"Error generating metadata: {e}")
+            logger.exception("Error generating metadata")
             return self._fallback_metadata()
 
     def augment_dataset(

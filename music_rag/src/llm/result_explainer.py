@@ -124,7 +124,7 @@ Format as JSON:
             return explanation
 
         except Exception as e:
-            logger.error(f"Error generating explanations: {e}")
+            logger.exception("Error generating explanations")
             return self._fallback_explanation(query, results)
 
     def explain_single_result(
@@ -167,7 +167,7 @@ Explain in 2-3 sentences why this track matches the query, focusing on musical c
             return explanation
 
         except Exception as e:
-            logger.error(f"Error explaining single result: {e}")
+            logger.exception("Error explaining single result")
             return "This track matches your search criteria."
 
     def _format_results(self, results: List[Dict[str, Any]]) -> str:
@@ -212,7 +212,7 @@ Explain in 2-3 sentences why this track matches the query, focusing on musical c
     def _fallback_explanation(self, query: str, results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Fallback explanation when LLM fails."""
         return {
-            "summary": f"Found {len(results)} tracks matching your query.",
+            "summary": f"Found {len(results)} tracks matching '{query}'.",
             "explanations": [
                 {"title": r.get('title', 'Unknown'), "explanation": "Matches your search criteria"}
                 for r in results[:5]
@@ -314,7 +314,7 @@ Respond in JSON format."""
             return insights
 
         except Exception as e:
-            logger.error(f"Error generating playlist insights: {e}")
+            logger.exception("Error generating playlist insights")
             return {
                 "track_count": len(tracks),
                 "error": str(e)
