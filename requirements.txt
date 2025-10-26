@@ -27,3 +27,24 @@ pyyaml>=6.0.1
 
 # Evaluation
 scipy>=1.11.0
+
+# Enhanced RAG Features (v0.2.0)
+# OpenAI integration for query enhancement and explanations
+openai>=1.0.0
+
+# UI frameworks
+gradio>=4.0.0
+streamlit>=1.30.0
+plotly>=5.18.0
+
+# Optional: Advanced audio features (install separately if needed)
+# essentia>=2.1b6
+# madmom>=0.16.1
+
+# Optional: Caching and performance
+# redis>=5.0.0
+# hiredis>=2.3.0
+
+# Optional: Alternative vector databases
+# qdrant-client>=1.7.0
+# weaviate-client>=3.26.0
