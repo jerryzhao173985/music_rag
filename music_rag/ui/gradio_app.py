@@ -297,7 +297,7 @@ class MusicRAGUI:
     def get_stats(self) -> str:
         """Get database statistics."""
         try:
-            stats = self.rag_system.get_stats()
+            stats = self.rag_system.db.get_stats()
             return f"""
             <div style='padding: 10px; background: #e8f5e9; border-radius: 5px;'>
                 <h4>📊 Database Statistics</h4>
@@ -306,8 +306,9 @@ class MusicRAGUI:
                 <p><strong>Searches Today:</strong> {len(self.search_history)}</p>
             </div>
             """
-        except Exception as e:
-            return f"<p style='color: red;'>Error getting stats: {e}</p>"
+        except Exception:
+            logger.exception("Error getting stats")
+            return "<p style='color: red;'>Error loading statistics</p>"
 
 
 def create_interface(

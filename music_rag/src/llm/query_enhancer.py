@@ -328,19 +328,28 @@ class ContextualQueryEnhancer:
         prefs = session['user_preferences']
 
         # Track liked genres, moods, etc.
+        # Keep as sets internally; convert to lists only when exporting
         if 'liked_genres' in feedback:
-            prefs.setdefault('preferred_genres', set()).update(feedback['liked_genres'])
+            if 'preferred_genres' not in prefs:
+                prefs['preferred_genres'] = set()
+            elif isinstance(prefs['preferred_genres'], list):
+                # Convert back to set if it was serialized
+                prefs['preferred_genres'] = set(prefs['preferred_genres'])
+            prefs['preferred_genres'].update(feedback['liked_genres'])
 
         if 'disliked_genres' in feedback:
-            prefs.setdefault('avoided_genres', set()).update(feedback['disliked_genres'])
+            if 'avoided_genres' not in prefs:
+                prefs['avoided_genres'] = set()
+            elif isinstance(prefs['avoided_genres'], list):
+                prefs['avoided_genres'] = set(prefs['avoided_genres'])
+            prefs['avoided_genres'].update(feedback['disliked_genres'])
 
         if 'liked_moods' in feedback:
-            prefs.setdefault('preferred_moods', set()).update(feedback['liked_moods'])
-
-        # Convert sets to lists for JSON serialization
-        for key in prefs:
-            if isinstance(prefs[key], set):
-                prefs[key] = list(prefs[key])
+            if 'preferred_moods' not in prefs:
+                prefs['preferred_moods'] = set()
+            elif isinstance(prefs['preferred_moods'], list):
+                prefs['preferred_moods'] = set(prefs['preferred_moods'])
+            prefs['preferred_moods'].update(feedback['liked_moods'])
 
     def clear_session(self, session_id: str):
         """Clear a session's context."""
@@ -348,5 +357,18 @@ class ContextualQueryEnhancer:
             del self.sessions[session_id]
 
     def get_session_summary(self, session_id: str) -> Optional[Dict]:
-        """Get summary of a session."""
-        return self.sessions.get(session_id)
+        """Get summary of a session with JSON-serializable preferences."""
+        session = self.sessions.get(session_id)
+        if session is None:
+            return None
+
+        # Make a copy and convert sets to lists for JSON serialization
+        summary = session.copy()
+        if 'user_preferences' in summary:
+            prefs = summary['user_preferences'].copy()
+            for key, value in prefs.items():
+                if isinstance(value, set):
+                    prefs[key] = list(value)
+            summary['user_preferences'] = prefs
+
+        return summary

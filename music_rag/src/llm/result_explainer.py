@@ -280,12 +280,21 @@ class MusicInsightGenerator:
             }
 
             # Generate insights using LLM
+            # Compute display strings to avoid f-string format spec with ternary
+            avg_tempo_str = f"{summary['avg_tempo']:.1f} BPM" if summary['avg_tempo'] is not None else "N/A"
+            tempo_range_str = (
+                f"{summary['tempo_range'][0]:.1f}-{summary['tempo_range'][1]:.1f} BPM"
+                if summary['tempo_range']
+                else "N/A"
+            )
+
             prompt = f"""Analyze this music collection and provide insights:
 
 Track Count: {summary['track_count']}
 Genres: {', '.join(summary['genres'])}
 Moods: {', '.join(summary['moods'])}
-Average Tempo: {summary['avg_tempo']:.1f if summary['avg_tempo'] else 'N/A'} BPM
+Average Tempo: {avg_tempo_str}
+Tempo Range: {tempo_range_str}
 Keys: {', '.join(summary['keys'])}
 
 Provide:

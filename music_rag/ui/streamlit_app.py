@@ -74,16 +74,18 @@ def home_page():
 
     with col1:
         try:
-            stats = rag_system.get_stats()
+            stats = rag_system.db.get_stats()
             st.metric("Text Embeddings", stats.get('text_embeddings_count', 0))
-        except:
+        except Exception:
+            logger.exception("Failed to load text embedding stats")
             st.metric("Text Embeddings", "N/A")
 
     with col2:
         try:
-            stats = rag_system.get_stats()
+            stats = rag_system.db.get_stats()
             st.metric("Audio Embeddings", stats.get('audio_embeddings_count', 0))
-        except:
+        except Exception:
+            logger.exception("Failed to load audio embedding stats")
             st.metric("Audio Embeddings", "N/A")
 
     with col3:
@@ -248,7 +250,7 @@ def database_page():
     st.subheader("Database Statistics")
 
     try:
-        stats = rag_system.get_stats()
+        stats = rag_system.db.get_stats()
 
         col1, col2 = st.columns(2)
 
@@ -257,8 +259,9 @@ def database_page():
 
         with col2:
             st.metric("Audio Embeddings", stats.get('audio_embeddings_count', 0))
-    except Exception as e:
-        st.error(f"Error getting stats: {e}")
+    except Exception:
+        logger.exception("Error getting database stats")
+        st.error("Error loading statistics")
 
     st.divider()
 
