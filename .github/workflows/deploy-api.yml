@@ -5,30 +5,26 @@ on:
     branches:
       - main
       - master
-      - 'claude/**'  # Allow testing on Claude branches
+      - 'claude/**'
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Check deployment configuration
-        run: |
-          echo "Checking if Render deployment is configured..."
-          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
-            echo "[OK] Render deployment URL is configured"
-          else
-            echo "[WARN] RENDER_DEPLOY_HOOK_URL secret is not set"
-            echo "[INFO] To enable automatic deployment, add RENDER_DEPLOY_HOOK_URL to repository secrets"
-            echo "See DEPLOYMENT.md for instructions"
-          fi
+      - name: Check configuration
+        run: echo "Checking Render configuration..."
 
-      - name: Deploy to Render
-        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      - name: Deploy
         run: |
-          echo "Triggering Render deployment..."
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            echo "[SKIP] RENDER_DEPLOY_HOOK_URL not configured"
+            echo "To enable deployment, add RENDER_DEPLOY_HOOK_URL secret"
+            exit 0
+          fi
+          echo "Deploying to Render..."
           curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
-          echo "[OK] Deployment triggered successfully"
+          echo "[OK] Deployment triggered"
