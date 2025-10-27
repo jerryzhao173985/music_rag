@@ -19,10 +19,10 @@ jobs:
         run: |
           echo "Checking if Render deployment is configured..."
           if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
-            echo "✅ Render deployment URL is configured"
+            echo "[OK] Render deployment URL is configured"
           else
-            echo "⚠️ RENDER_DEPLOY_HOOK_URL secret is not set"
-            echo "ℹ️ To enable automatic deployment, add RENDER_DEPLOY_HOOK_URL to repository secrets"
+            echo "[WARN] RENDER_DEPLOY_HOOK_URL secret is not set"
+            echo "[INFO] To enable automatic deployment, add RENDER_DEPLOY_HOOK_URL to repository secrets"
             echo "See DEPLOYMENT.md for instructions"
           fi
 
@@ -31,4 +31,4 @@ jobs:
         run: |
           echo "Triggering Render deployment..."
           curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
-          echo "✅ Deployment triggered successfully"
+          echo "[OK] Deployment triggered successfully"
