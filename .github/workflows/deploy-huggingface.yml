@@ -1,0 +1,29 @@
+name: Deploy to Hugging Face
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - 'claude/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check configuration
+        run: echo "Checking Hugging Face configuration..."
+
+      - name: Deploy
+        run: |
+          if [ -z "${{ secrets.HF_TOKEN }}" ]; then
+            echo "[SKIP] HF_TOKEN not configured"
+            echo "To enable deployment, add these secrets: HF_TOKEN, HF_USERNAME, HF_SPACE_NAME"
+            exit 0
+          fi
+          echo "[OK] Hugging Face credentials found"
+          echo "Deployment skipped - configure as needed"

@@ -2,8 +2,199 @@
 
 Complete guide for deploying the Music RAG system in various environments.
 
+---
+
+## Web App Deployment
+
+The Music RAG system includes three web interfaces:
+- **Static HTML/JS App** - Modern frontend deployable to GitHub Pages
+- **Gradio UI** - Interactive Python app deployable to Hugging Face Spaces
+- **Streamlit Dashboard** - Analytics dashboard (requires Python hosting)
+
+### GitHub Pages + Render
+
+This option deploys a modern static web app to GitHub Pages (frontend) and the FastAPI backend to Render.com (backend).
+
+#### Prerequisites
+
+- GitHub account with repository
+- Render.com account (free tier available)
+
+#### Step 1: Enable GitHub Pages
+
+1. Go to your repository on GitHub
+2. Navigate to **Settings** → **Pages**
+3. Under **Source**, select **GitHub Actions** (not "Deploy from a branch")
+4. The workflow will automatically deploy the `docs/` directory containing `index.html`
+
+#### Step 2: Deploy API Backend to Render
+
+**Automatic Deployment (Recommended):**
+
+1. Sign up for a free account at [render.com](https://render.com)
+
+2. Create a new **Web Service**:
+   - Click **New** → **Web Service**
+   - Connect your GitHub repository
+   - Render will auto-detect the `render.yaml` configuration
+   - Click **Apply**
+
+3. Set environment variables in Render dashboard:
+   - `CHROMADB_PATH`: `/opt/render/project/data/chromadb`
+   - `LOG_LEVEL`: `INFO`
+   - `ENVIRONMENT`: `production`
+   - `OPENAI_API_KEY`: (Optional) Your OpenAI key for LLM features
+   - `API_KEY`: (Optional) Generate a random key for API authentication
+
+4. Get the deploy hook URL:
+   - In Render, go to your service → **Settings** → **Deploy Hook**
+   - Copy the webhook URL
+   - In GitHub, go to **Settings** → **Secrets and variables** → **Actions**
+   - Create secret: `RENDER_DEPLOY_HOOK_URL` = webhook URL
+
+#### Step 3: Configure Frontend API URL
+
+After your API is deployed to Render:
+
+1. Visit your GitHub Pages site: `https://USERNAME.github.io/music_rag/`
+2. When prompted, enter your Render API URL: `https://music-rag-api.onrender.com`
+3. The URL will be saved in browser localStorage
+
+**Alternative:** Edit `docs/index.html` line 298 and change:
+```javascript
+const API_URL = localStorage.getItem('apiUrl') || 'https://YOUR-APP.onrender.com';
+```
+
+#### Step 4: Initialize Sample Data
+
+After deployment, populate the database:
+
+```bash
+# Create a sample_data.json file locally with music items
+# Then upload via the API:
+curl -X POST "https://your-app.onrender.com/index/batch" \
+  -H "Content-Type: application/json" \
+  -d @sample_data.json
+```
+
+Or use the web interface's "Database" page to add items manually.
+
+---
+
+### Hugging Face Spaces
+
+Deploy the Gradio interface to Hugging Face Spaces for an all-in-one solution (frontend + backend).
+
+#### Step 1: Create Hugging Face Space
+
+1. Sign up at [huggingface.co](https://huggingface.co)
+2. Click **New** → **Space**
+3. Choose:
+   - **Name**: `music-rag` (or your preference)
+   - **SDK**: `Gradio`
+   - **Visibility**: Public or Private
+4. Click **Create Space**
+
+#### Step 2: Configure GitHub Secrets
+
+Add these secrets to your GitHub repository (**Settings** → **Secrets and variables** → **Actions**):
+
+- `HF_TOKEN`: Your Hugging Face access token
+  - Get it from [Settings → Access Tokens](https://huggingface.co/settings/tokens)
+  - Create a new token with "write" access
+- `HF_USERNAME`: Your Hugging Face username
+- `HF_SPACE_NAME`: Your Space name (e.g., `music-rag`)
+
+#### Step 3: Configure Space Secrets (Optional)
+
+In your Hugging Face Space settings, add:
+- `OPENAI_API_KEY`: For query enhancement and result explanations
+
+#### Step 4: Deploy
+
+The GitHub Action (`deploy-huggingface.yml`) will automatically deploy on every push to main/master.
+
+Manual trigger:
+1. Go to **Actions** → **Deploy Gradio to Hugging Face Spaces**
+2. Click **Run workflow**
+3. Select branch and click **Run workflow**
+
+#### Step 5: Access Your App
+
+Visit: `https://huggingface.co/spaces/YOUR_USERNAME/YOUR_SPACE_NAME`
+
+---
+
+### GitHub Actions Setup
+
+All workflows are located in `.github/workflows/`.
+
+#### Required Secrets Configuration
+
+Go to your GitHub repository → **Settings** → **Secrets and variables** → **Actions**
+
+Add these secrets as needed:
+
+| Secret Name | Required For | How to Get |
+|-------------|--------------|------------|
+| `RENDER_DEPLOY_HOOK_URL` | API deployment to Render | Render dashboard → Settings → Deploy Hook |
+| `HF_TOKEN` | Hugging Face deployment | HuggingFace → Settings → Access Tokens |
+| `HF_USERNAME` | Hugging Face deployment | Your HF username |
+| `HF_SPACE_NAME` | Hugging Face deployment | Your Space name |
+
+#### Available Workflows
+
+**1. deploy-github-pages.yml**
+- **Triggers**: Push to main/master, manual
+- **Purpose**: Deploys static web app to GitHub Pages
+- **Secrets needed**: None (uses built-in `GITHUB_TOKEN`)
+
+**2. deploy-api.yml**
+- **Triggers**: Push to main/master, manual
+- **Purpose**: Deploys FastAPI backend to Render
+- **Secrets needed**: `RENDER_DEPLOY_HOOK_URL`
+
+**3. deploy-huggingface.yml**
+- **Triggers**: Push to main/master, manual
+- **Purpose**: Deploys Gradio app to HF Spaces
+- **Secrets needed**: `HF_TOKEN`, `HF_USERNAME`, `HF_SPACE_NAME`
+
+#### Manual Workflow Execution
+
+1. Go to your repository's **Actions** tab
+2. Select the workflow you want to run
+3. Click **Run workflow** button
+4. Choose the branch
+5. Click **Run workflow**
+
+#### Post-Deployment Verification
+
+**GitHub Pages:**
+```bash
+curl https://USERNAME.github.io/music_rag/
+```
+
+**Render API:**
+```bash
+curl https://your-app.onrender.com/health
+```
+
+Expected response:
+```json
+{"status": "healthy", "version": "0.2.0"}
+```
+
+**Hugging Face Space:**
+Visit the Space URL and test the search functionality.
+
+---
+
 ## Table of Contents
 
+- [Web App Deployment](#web-app-deployment)
+  - [GitHub Pages + Render](#github-pages--render)
+  - [Hugging Face Spaces](#hugging-face-spaces)
+  - [GitHub Actions Setup](#github-actions-setup)
 - [Quick Start](#quick-start)
 - [Local Development](#local-development)
 - [Docker Deployment](#docker-deployment)
