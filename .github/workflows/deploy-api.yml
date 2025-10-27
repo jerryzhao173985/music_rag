@@ -15,12 +15,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check deployment configuration
+        run: |
+          echo "Checking if Render deployment is configured..."
+          if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            echo "✅ Render deployment URL is configured"
+          else
+            echo "⚠️ RENDER_DEPLOY_HOOK_URL secret is not set"
+            echo "ℹ️ To enable automatic deployment, add RENDER_DEPLOY_HOOK_URL to repository secrets"
+            echo "See DEPLOYMENT.md for instructions"
+          fi
+
       - name: Deploy to Render
         if: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
         run: |
+          echo "Triggering Render deployment..."
           curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
-
-      - name: Notify deployment
-        run: |
-          echo "API deployment triggered successfully"
-          echo "If you haven't set up Render yet, follow the documentation in DEPLOYMENT.md"
+          echo "✅ Deployment triggered successfully"

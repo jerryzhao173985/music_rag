@@ -15,6 +15,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check HuggingFace configuration
+        run: |
+          echo "Checking if Hugging Face deployment is configured..."
+          if [ -n "${{ secrets.HF_TOKEN }}" ]; then
+            echo "✅ Hugging Face credentials are configured"
+          else
+            echo "⚠️ HF_TOKEN secret is not set"
+            echo "ℹ️ To enable HF Spaces deployment, add these secrets:"
+            echo "  - HF_TOKEN"
+            echo "  - HF_USERNAME"
+            echo "  - HF_SPACE_NAME"
+            echo "See DEPLOYMENT.md for instructions"
+          fi
+
       - name: Push to Hugging Face Space
         if: ${{ secrets.HF_TOKEN }}
         env:
