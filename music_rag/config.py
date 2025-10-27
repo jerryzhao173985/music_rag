@@ -32,6 +32,20 @@ class Settings(BaseSettings):
     audio_sample_rate: int = Field(default=22050, validation_alias="AUDIO_SAMPLE_RATE")
     audio_n_mfcc: int = Field(default=40, validation_alias="AUDIO_N_MFCC")
 
+    # CLAP embeddings (v0.2.0)
+    use_clap: bool = Field(default=False, validation_alias="USE_CLAP")
+    clap_model: str = Field(default="laion/clap-htsat-unfused", validation_alias="CLAP_MODEL")
+
+    # LLM integration (v0.2.0)
+    openai_api_key: Optional[str] = Field(default=None, validation_alias="OPENAI_API_KEY")
+    llm_model: str = Field(default="gpt-4o-mini", validation_alias="LLM_MODEL")
+    enable_query_enhancement: bool = Field(default=False, validation_alias="ENABLE_QUERY_ENHANCEMENT")
+    enable_result_explanation: bool = Field(default=False, validation_alias="ENABLE_RESULT_EXPLANATION")
+
+    # Reranking (v0.2.0)
+    enable_reranking: bool = Field(default=False, validation_alias="ENABLE_RERANKING")
+    reranker_model: str = Field(default="cross-encoder/ms-marco-MiniLM-L-6-v2", validation_alias="RERANKER_MODEL")
+
     # Retrieval
     default_top_k: int = Field(default=10, validation_alias="DEFAULT_TOP_K")
     default_semantic_weight: float = Field(default=0.7, validation_alias="DEFAULT_SEMANTIC_WEIGHT")
