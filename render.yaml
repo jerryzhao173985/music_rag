@@ -1,0 +1,28 @@
+services:
+  # Music RAG API Service
+  - type: web
+    name: music-rag-api
+    env: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn music_rag.api:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: CHROMADB_PATH
+        value: /opt/render/project/data/chromadb
+      - key: LOG_LEVEL
+        value: INFO
+      - key: ENVIRONMENT
+        value: production
+      - key: API_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false  # Set this manually in Render dashboard
+    disk:
+      name: chromadb-data
+      mountPath: /opt/render/project/data
+      sizeGB: 1

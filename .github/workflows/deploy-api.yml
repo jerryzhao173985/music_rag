@@ -1,0 +1,25 @@
+name: Deploy API to Render
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Render
+        if: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
+      - name: Notify deployment
+        run: |
+          echo "API deployment triggered successfully"
+          echo "If you haven't set up Render yet, follow the documentation in DEPLOYMENT.md"
