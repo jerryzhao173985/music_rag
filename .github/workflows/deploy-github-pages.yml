@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - 'claude/**'  # Allow testing on Claude branches
   workflow_dispatch:
 
 permissions:
