@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation (not needed in container)
+docs/
+notebooks/
+*.md
+!README.md
+
+# Data and caches (will be volume mounted or generated)
+data/chromadb/
+data/embeddings/
+*.db
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Environment files (use secrets instead)
+.env
+.env.local
+.env.*
+
+# Testing
+tests/
+pytest.ini
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
